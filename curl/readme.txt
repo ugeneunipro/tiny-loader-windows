@@ -1,0 +1,1 @@
+This is cutted curl package v.7.49.1, only for building UGENE loader fo Windows.
