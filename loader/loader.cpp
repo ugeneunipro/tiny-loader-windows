@@ -41,6 +41,7 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
 
 TCHAR szProgress[120] = { 0 };
 
+#define _CRT_SECURE_NO_WARNINGS
 int my_progress_func(void *bar,
     double t, /* dltotal */
     double d, /* dlnow */
@@ -48,13 +49,15 @@ int my_progress_func(void *bar,
     double ulnow)
 {
     char *sz = (char *)malloc(120 * sizeof(char));
-    sprintf(sz, "Downloaded  %.2f %%", d <= 0.01 || t <= 0.01 ? 0.0 : d * 100 / t);
+    sprintf_s(sz, 119, "Downloaded  %.2f %%", d <= 0.01 || t <= 0.01 ? 0.0 : d * 100 / t);
 
-    size_t wn = mbsrtowcs(NULL, (const char **)&sz, 0, NULL);
-    mbsrtowcs(szProgress, (const char **)&sz, wn + 1, NULL);
+    size_t wn = 0;
+    mbsrtowcs_s(&wn, NULL, 0, (const char **)&sz, 0, NULL);
+    mbsrtowcs_s(&wn, szProgress, 119, (const char **)&sz, wn + 1, NULL);
 
     return 0;
 }
+#undef _CRT_SECURE_NO_WARNINGS
 
 void downloadInstaller(const char *link, const char *outFileName, int* isDownloaded) {
     CURL *curl_handle;
@@ -317,7 +320,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             //DrawText(hDC, SZ_4, lstrlen(SZ_4), &rect, DT_WORDBREAK);
 
             //TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_4, lstrlen(SZ_4));
-            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
             TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
                 , buff, lstrlen(buff));
             break;
@@ -326,21 +329,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             Rectangle(hDC, rect.left, rect.top, rect.right, rect.bottom);
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_1, lstrlen(SZ_1));
             //DrawText(hDC, SZ_1, lstrlen(SZ_1), &rect, DT_WORDBREAK);
-            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
             TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
                 , buff, lstrlen(buff));
             break;
         case ID_TIMER_2:
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_2, lstrlen(SZ_2));
             //DrawText(hDC, SZ_2, lstrlen(SZ_2), &rect, DT_WORDBREAK);
-            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
             TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
                 , buff, lstrlen(buff));
             break;
         case ID_TIMER_3:
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_3, lstrlen(SZ_3));
             //DrawText(hDC, SZ_3, lstrlen(SZ_3), &rect, DT_WORDBREAK);
-            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
             TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
                 , buff, lstrlen(buff));
             break;
