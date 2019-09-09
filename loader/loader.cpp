@@ -6,6 +6,7 @@
 
 #define MAX_LOADSTRING 100
 
+#define SZ_0    TEXT("Unipro UGENE installer preparing")
 #define SZ_1    TEXT("Unipro UGENE installer preparing   ")
 #define SZ_2    TEXT("Unipro UGENE installer preparing.  ")
 #define SZ_3   TEXT("Unipro UGENE installer preparing.. ")
@@ -38,6 +39,23 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     return written;
 }
 
+TCHAR szProgress[120] = { 0 };
+
+int my_progress_func(void *bar,
+    double t, /* dltotal */
+    double d, /* dlnow */
+    double ultotal,
+    double ulnow)
+{
+    char *sz = (char *)malloc(120 * sizeof(char));
+    sprintf(sz, "Downloaded  %.2f %%", d <= 0.01 || t <= 0.01 ? 0.0 : d * 100 / t);
+
+    size_t wn = mbsrtowcs(NULL, (const char **)&sz, 0, NULL);
+    mbsrtowcs(szProgress, (const char **)&sz, wn + 1, NULL);
+
+    return 0;
+}
+
 void downloadInstaller(const char *link, const char *outFileName, int* isDownloaded) {
     CURL *curl_handle;
     FILE *outFile;
@@ -46,7 +64,16 @@ void downloadInstaller(const char *link, const char *outFileName, int* isDownloa
     curl_handle = curl_easy_init(); //init the curl session
     curl_easy_setopt(curl_handle, CURLOPT_URL, link); //set URL to get here
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);  //Switch on full protocol/debug output while testing. Only for debug purpose.
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L); //disable progress meter, set to 0L to enable and disable debug output
+
+    if (false) {
+        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L); //disable progress meter, set to 0L to enable and disable debug output
+    } else {
+        /* Switch on full protocol/debug output */
+        curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, my_progress_func);
+    }
+
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data); //send all data to this function
     curl_easy_setopt(curl_handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
     fopen_s(&outFile, outFileName, "wb"); //open the file
@@ -276,6 +303,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         HDC hDC = GetDC(hWnd);
         SetTextAlign(hDC, TA_CENTER | VTA_CENTER);
         RECT rect = { 0 };
+        TCHAR buff[240];
         GetClientRect(hWnd, &rect);
         KillTimer(hWnd, wParam);
         switch (wParam) {
@@ -287,24 +315,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             SetTimer(hWnd, ID_TIMER_4, 4000, NULL);
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_4, lstrlen(SZ_4));
             //DrawText(hDC, SZ_4, lstrlen(SZ_4), &rect, DT_WORDBREAK);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_4, lstrlen(SZ_4));
+
+            //TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_4, lstrlen(SZ_4));
+            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
+                , buff, lstrlen(buff));
             break;
         case ID_TIMER_1:
             //FillRect(hDC, &rect, (HBRUSH)(COLOR_WINDOW + 1));
             Rectangle(hDC, rect.left, rect.top, rect.right, rect.bottom);
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_1, lstrlen(SZ_1));
             //DrawText(hDC, SZ_1, lstrlen(SZ_1), &rect, DT_WORDBREAK);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_1, lstrlen(SZ_1));
+            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
+                , buff, lstrlen(buff));
             break;
         case ID_TIMER_2:
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_2, lstrlen(SZ_2));
             //DrawText(hDC, SZ_2, lstrlen(SZ_2), &rect, DT_WORDBREAK);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_2, lstrlen(SZ_2));
+            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
+                , buff, lstrlen(buff));
             break;
         case ID_TIMER_3:
             //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_3, lstrlen(SZ_3));
             //DrawText(hDC, SZ_3, lstrlen(SZ_3), &rect, DT_WORDBREAK);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_3, lstrlen(SZ_3));
+            _stprintf(buff, L"%s,  %s", SZ_0, szProgress);
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
+                , buff, lstrlen(buff));
             break;
         }
         ReleaseDC(hWnd, hDC);
