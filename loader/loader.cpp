@@ -45,9 +45,10 @@ void downloadInstaller(const char *link, const char *outFileName, int* isDownloa
     curl_global_init(CURL_GLOBAL_ALL);
     curl_handle = curl_easy_init(); //init the curl session
     curl_easy_setopt(curl_handle, CURLOPT_URL, link); //set URL to get here
-    //curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);  //Switch on full protocol/debug output while testing. Only for debug purpose.
+    curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);  //Switch on full protocol/debug output while testing. Only for debug purpose.
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L); //disable progress meter, set to 0L to enable and disable debug output
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data); //send all data to this function
+    curl_easy_setopt(curl_handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
     fopen_s(&outFile, outFileName, "wb"); //open the file
     if (outFile) {
         CURLcode res;
@@ -253,8 +254,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         Rectangle(hDC, rect.left, rect.top, rect.right, rect.bottom);
         SetTextAlign(hDC, TA_CENTER);
         TEXTMETRIC* tm = NULL;
-        GetTextMetrics(hDC, tm);
-        LONG fontHeight = tm->tmAscent + tm->tmDescent;
+        LONG fontHeight = 20;
+        if (GetTextMetrics(hDC, tm)) {
+            fontHeight = tm->tmAscent + tm->tmDescent;
+        }
 
         TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_1, lstrlen(SZ_1));
         EndPaint(hWnd, &ps);
