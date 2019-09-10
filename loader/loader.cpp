@@ -6,13 +6,17 @@
 
 #define MAX_LOADSTRING 100
 
-#define SZ_0    TEXT("Unipro UGENE installer preparing")
+#define SZ_0    TEXT("Unipro UGENE Online Installer is loading...")
 #define SZ_1    TEXT("Unipro UGENE installer preparing   ")
 #define SZ_2    TEXT("Unipro UGENE installer preparing.  ")
 #define SZ_3   TEXT("Unipro UGENE installer preparing.. ")
 #define SZ_4   TEXT("Unipro UGENE installer preparing...")
 #define SZ_CLEAN   TEXT("                                   ")
 #define SZ_SPLASH  TEXT("Splash window")
+
+#define SPLASH_WIDTH  500
+#define SPLASH_HEIGHT  50
+HBRUSH hSplashBrush;
 
 #define ID_TIMER_1	0x1111
 #define ID_TIMER_2	0x1112
@@ -23,6 +27,7 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+int   AlreadyRunMessageBox();
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -39,9 +44,9 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     return written;
 }
 
+double progress = 0.0;
 TCHAR szProgress[120] = { 0 };
 
-#define _CRT_SECURE_NO_WARNINGS
 int my_progress_func(void *bar,
     double t, /* dltotal */
     double d, /* dlnow */
@@ -49,7 +54,8 @@ int my_progress_func(void *bar,
     double ulnow)
 {
     char *sz = (char *)malloc(120 * sizeof(char));
-    sprintf_s(sz, 119, "Downloaded  %.2f %%", d <= 0.01 || t <= 0.01 ? 0.0 : d * 100 / t);
+    progress = d <= 0.01 || t <= 0.01 ? 0.0 : d / t;
+    sprintf_s(sz, 119, "Downloaded  %.2f %%", d <= 0.01 || t <= 0.01 ? 0.0 : progress * 100);
 
     size_t wn = 0;
     mbsrtowcs_s(&wn, NULL, 0, (const char **)&sz, 0, NULL);
@@ -57,7 +63,6 @@ int my_progress_func(void *bar,
 
     return 0;
 }
-#undef _CRT_SECURE_NO_WARNINGS
 
 void downloadInstaller(const char *link, const char *outFileName, int* isDownloaded) {
     CURL *curl_handle;
@@ -95,7 +100,6 @@ void downloadInstaller(const char *link, const char *outFileName, int* isDownloa
 }
 
 int numBitsSystem() {
-
     // We don't need to catch all the CPU architectures in this function;
     // only those where the host CPU might be different than the build target
     // (usually, 64-bit platforms).
@@ -116,6 +120,7 @@ int numBitsSystem() {
     }
     return 32;
 }
+
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
     _In_ LPTSTR    lpCmdLine,
@@ -127,10 +132,17 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
     HACCEL hAccelTable;
 
+    lstrcpy(szWindowClass, TEXT("UgeneTinyInstallerSplashWindow"));
+    HWND hWndExists = FindWindow(szWindowClass, NULL);
+    if (hWndExists != NULL) {
+        AlreadyRunMessageBox();
+        return -1;
+    }
+
     // Initialize global strings
+    hSplashBrush = CreateSolidBrush(RGB(73, 104, 118));
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    lstrcpy(szWindowClass, TEXT("SplashWindow"));
-    MyRegisterClass(hInstance);
+    ATOM a = MyRegisterClass(hInstance);
 
     // Perform application initialization:
     if (!InitInstance(hInstance, nCmdShow)) {
@@ -222,8 +234,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     HWND hWnd;
     RECT rect;
-    int  splashwidth = 500;
-    int  splashheight = 50;
+    int  splashwidth = SPLASH_WIDTH;
+    int  splashheight = SPLASH_HEIGHT * 3;
 
     hInst = hInstance; // Store instance handle in our global variable
     SystemParametersInfo(SPI_GETWORKAREA, 0, (LPVOID)&rect, 0);
@@ -289,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             fontHeight = tm->tmAscent + tm->tmDescent;
         }
 
-        TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_1, lstrlen(SZ_1));
+        TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17, SZ_1, lstrlen(SZ_1));
         EndPaint(hWnd, &ps);
     }
     break;
@@ -311,41 +323,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         KillTimer(hWnd, wParam);
         switch (wParam) {
         case ID_TIMER_4:
-            //DestroyWindow(hWnd);
             SetTimer(hWnd, ID_TIMER_1, 1000, NULL);
             SetTimer(hWnd, ID_TIMER_2, 2000, NULL);
             SetTimer(hWnd, ID_TIMER_3, 3000, NULL);
             SetTimer(hWnd, ID_TIMER_4, 4000, NULL);
-            //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_4, lstrlen(SZ_4));
-            //DrawText(hDC, SZ_4, lstrlen(SZ_4), &rect, DT_WORDBREAK);
-
-            //TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/, SZ_4, lstrlen(SZ_4));
-            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
-                , buff, lstrlen(buff));
-            break;
-        case ID_TIMER_1:
-            //FillRect(hDC, &rect, (HBRUSH)(COLOR_WINDOW + 1));
             Rectangle(hDC, rect.left, rect.top, rect.right, rect.bottom);
-            //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_1, lstrlen(SZ_1));
-            //DrawText(hDC, SZ_1, lstrlen(SZ_1), &rect, DT_WORDBREAK);
-            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
-                , buff, lstrlen(buff));
-            break;
+        case ID_TIMER_1:
         case ID_TIMER_2:
-            //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_2, lstrlen(SZ_2));
-            //DrawText(hDC, SZ_2, lstrlen(SZ_2), &rect, DT_WORDBREAK);
-            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
-                , buff, lstrlen(buff));
-            break;
         case ID_TIMER_3:
-            //TextOut(hDC, rect.left + 50, rect.top + 20, SZ_3, lstrlen(SZ_3));
-            //DrawText(hDC, SZ_3, lstrlen(SZ_3), &rect, DT_WORDBREAK);
-            _stprintf_s(buff, 239, L"%s,  %s", SZ_0, szProgress);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17/*(rect.bottom - rect.top)/2 - fontHeight*/
-                , buff, lstrlen(buff));
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17, SZ_0, lstrlen(SZ_0));
+            RECT barF = { rect.left + SPLASH_HEIGHT
+                , rect.top + SPLASH_HEIGHT + SPLASH_HEIGHT * 0.2
+                , rect.right - SPLASH_HEIGHT
+                , rect.top + SPLASH_HEIGHT + SPLASH_HEIGHT - SPLASH_HEIGHT * 0.2 };
+            RECT barC = { barF.left
+                , barF.top
+                , barF.left + (barF.right - barF.left) * progress
+                , barF.bottom };
+            Rectangle(hDC, barF.left, barF.top, barF.right, barF.bottom);
+            FillRect(hDC, &barC, hSplashBrush);
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17 + SPLASH_HEIGHT * 2, szProgress, lstrlen(szProgress));
             break;
         }
         ReleaseDC(hWnd, hDC);
@@ -355,4 +352,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+int AlreadyRunMessageBox()
+{
+    int msgboxID = MessageBox(
+        NULL,
+        (LPCWSTR)L"UGENE online installer already started.\nYou need to terminate it to run the new one",
+        (LPCWSTR)L"UGENE Online Installer",
+        MB_ICONWARNING | MB_APPLMODAL | MB_OK
+        );
+
+    switch (msgboxID) {
+    case IDCANCEL:
+        // TODO: add code
+        break;
+    case IDTRYAGAIN:
+        // TODO: add code
+        break;
+    case IDCONTINUE:
+        // TODO: add code
+        break;
+    }
+
+    return msgboxID;
 }
