@@ -111,7 +111,7 @@
     <Image Include="ugene.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="test-multi-start.sh" />
+    <None Include="test-multi-start-d.sh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
