@@ -6,11 +6,11 @@
 
 #define MAX_LOADSTRING 100
 
-#define SZ_0    TEXT("Unipro UGENE Online Installer is loading...")
-#define SZ_1    TEXT("Unipro UGENE installer preparing   ")
-#define SZ_2    TEXT("Unipro UGENE installer preparing.  ")
-#define SZ_3   TEXT("Unipro UGENE installer preparing.. ")
-#define SZ_4   TEXT("Unipro UGENE installer preparing...")
+#define SZ_0       TEXT("Unipro UGENE Online Installer is loading...")
+#define SZ_1       TEXT("Unipro UGENE installer preparing   ")
+#define SZ_2       TEXT("Unipro UGENE installer preparing.  ")
+#define SZ_3       TEXT("Unipro UGENE installer preparing.. ")
+#define SZ_4       TEXT("Unipro UGENE installer preparing...")
 #define SZ_CLEAN   TEXT("                                   ")
 #define SZ_SPLASH  TEXT("Splash window")
 
@@ -27,7 +27,7 @@ HBRUSH hSplashBrush;
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-int   AlreadyRunMessageBox();
+int   AlreadyRunMessageBox(DWORD dword);
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -132,17 +132,17 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
     HACCEL hAccelTable;
 
-    lstrcpy(szWindowClass, TEXT("UgeneTinyInstallerSplashWindow"));
-    HWND hWndExists = FindWindow(szWindowClass, NULL);
-    if (hWndExists != NULL) {
-        AlreadyRunMessageBox();
-        return -1;
-    }
-
     // Initialize global strings
+    lstrcpy(szWindowClass, TEXT("UgeneTinyInstallerSplashWindow"));
     hSplashBrush = CreateSolidBrush(RGB(73, 104, 118));
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    ATOM a = MyRegisterClass(hInstance);
+    ATOM atom = MyRegisterClass(hInstance);
+
+    DWORD lastError = GetLastError();
+    if (FindWindow(szWindowClass, NULL) != NULL) {
+        AlreadyRunMessageBox(lastError);
+        return -1;
+    }
 
     // Perform application initialization:
     if (!InitInstance(hInstance, nCmdShow)) {
@@ -182,12 +182,15 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
             isAlreadySended = true;
             first.join();
             PostMessage(msg.hwnd, WM_DESTROY, 0, 0);
+            DestroyWindow(msg.hwnd);
+            break;
         }
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
+
     //Execute downloaded installer
     WinExec(outFileName, SW_SHOW);
     printf_s("finish");
@@ -354,11 +357,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
-int AlreadyRunMessageBox()
+int AlreadyRunMessageBox(DWORD dword)
 {
+    TCHAR buff[512] = { 0 };
+    _stprintf_s(buff, L"%s"
+        , L"Unipro UGENE Online Installer is already started.\nSee progress of the loading in another window."
+        , (int)dword);
+
     int msgboxID = MessageBox(
         NULL,
-        (LPCWSTR)L"Unipro UGENE Online Installer is already started.\nSee progress of the loading in another window.",
+        (LPCWSTR)buff,
         (LPCWSTR)L"Unipro UGENE Installer is Already Started",
         MB_ICONWARNING | MB_APPLMODAL | MB_OK
         );
