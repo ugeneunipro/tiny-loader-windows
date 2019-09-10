@@ -318,7 +318,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         HDC hDC = GetDC(hWnd);
         SetTextAlign(hDC, TA_CENTER | VTA_CENTER);
         RECT rect = { 0 };
-        TCHAR buff[240];
+
         GetClientRect(hWnd, &rect);
         KillTimer(hWnd, wParam);
         switch (wParam) {
@@ -358,8 +358,8 @@ int AlreadyRunMessageBox()
 {
     int msgboxID = MessageBox(
         NULL,
-        (LPCWSTR)L"UGENE online installer already started.\nYou need to terminate it to run the new one",
-        (LPCWSTR)L"UGENE Online Installer",
+        (LPCWSTR)L"Unipro UGENE Online Installer is already started.\nSee progress of the loading in another window.",
+        (LPCWSTR)L"Unipro UGENE Installer is Already Started",
         MB_ICONWARNING | MB_APPLMODAL | MB_OK
         );
 
