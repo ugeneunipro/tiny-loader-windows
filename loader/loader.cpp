@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "loader.h"
+#include "resource.h"
 
 #define MAX_LOADSTRING 100
 
@@ -14,9 +15,11 @@
 #define SZ_CLEAN   TEXT("                                   ")
 #define SZ_SPLASH  TEXT("Splash window")
 
-#define SPLASH_WIDTH  500
-#define SPLASH_HEIGHT  50
-HBRUSH hSplashBrush;
+HBRUSH  hSplashBrush;
+HBITMAP bkgBitmap;
+COLORREF splashTextColor = RGB(255, 255, 255);
+int splashWidth = 500;
+int splashHeight = 50;
 
 #define ID_TIMER_1	0x1111
 #define ID_TIMER_2	0x1112
@@ -31,9 +34,10 @@ int   AlreadyRunMessageBox(DWORD dword);
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
-BOOL				InitInstance(HINSTANCE, int);
+HWND				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+void                drawBkgBitmap(HWND hWnd, HDC hdc, RECT *rect);
 
 void downloadFile(int *isDownloaded) {
     printf_s("test");
@@ -134,7 +138,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
     // Initialize global strings
     lstrcpy(szWindowClass, TEXT("UgeneTinyInstallerSplashWindow"));
-    hSplashBrush = CreateSolidBrush(RGB(73, 104, 118));
+    hSplashBrush = CreateSolidBrush(splashTextColor);
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     ATOM atom = MyRegisterClass(hInstance);
 
@@ -145,7 +149,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     }
 
     // Perform application initialization:
-    if (!InitInstance(hInstance, nCmdShow)) {
+    HWND hwndMain = InitInstance(hInstance, nCmdShow);
+    if (hwndMain == NULL) {
         return FALSE;
     }
 
@@ -162,6 +167,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     char* outFileName = (char*)_alloca(len + 1);
     size_t charsConverted = 0;
     wcstombs_s(&charsConverted, outFileName, len + 1, _outFileName, len + 1);
+
     //Check number bits of system
     const char *link;
     int isDownloaded = 0;
@@ -181,8 +187,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
         if (isDownloaded == 1 && isAlreadySended != true) {
             isAlreadySended = true;
             first.join();
-            PostMessage(msg.hwnd, WM_DESTROY, 0, 0);
-            DestroyWindow(msg.hwnd);
             break;
         }
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
@@ -190,6 +194,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
     }
+    DestroyWindow(msg.hwnd);
 
     //Execute downloaded installer
     WinExec(outFileName, SW_SHOW);
@@ -197,7 +202,18 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     return (int)msg.wParam;
 }
 
+void drawBkgBitmap(HWND hWnd, HDC hdc, RECT *rect) {
+    HDC             hdcMem;
+    HGDIOBJ         oldBitmap;
 
+    hdcMem = CreateCompatibleDC(hdc);
+    oldBitmap = SelectObject(hdcMem, bkgBitmap);
+
+    StretchBlt(hdc, 0, 0, rect->right, rect->bottom, hdcMem, 0, 0, splashWidth, splashHeight, SRCCOPY);
+
+    SelectObject(hdcMem, oldBitmap);
+    DeleteDC(hdcMem);
+}
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -206,7 +222,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance) {
     WNDCLASSEX wcex;
-
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -216,7 +231,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
     wcex.hInstance = hInstance;
     wcex.hIcon = NULL;
     wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.hbrBackground = NULL; //(HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = NULL;
@@ -234,14 +249,18 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 //        In this function, we save the instance handle in a global variable and
 //        create and display the main program window.
 //
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
-    HWND hWnd;
+HWND InitInstance(HINSTANCE hInstance, int nCmdShow) {
+    HWND hWnd = NULL;
     RECT rect;
-    int  splashwidth = SPLASH_WIDTH;
-    int  splashheight = SPLASH_HEIGHT * 3;
+    BITMAP bitmap;
 
     hInst = hInstance; // Store instance handle in our global variable
     SystemParametersInfo(SPI_GETWORKAREA, 0, (LPVOID)&rect, 0);
+
+    bkgBitmap = (HBITMAP)LoadBitmap(GetModuleHandle(0), MAKEINTRESOURCE(IDB_BITMAP1));
+    GetObject(bkgBitmap, sizeof(bitmap), &bitmap);
+    splashHeight = bitmap.bmHeight;
+    splashWidth = bitmap.bmWidth;
 
     //   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
     //      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
@@ -250,10 +269,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
         NULL,
         //WS_OVERLAPPED,
         WS_POPUP | WS_VISIBLE,
-        (rect.right - rect.left - splashwidth) / 2,
-        (rect.bottom - rect.top - splashheight) / 2,
-        splashwidth,
-        splashheight,
+        (rect.right - rect.left - splashWidth) / 2,
+        (rect.bottom - rect.top - splashHeight) / 2,
+        splashWidth,
+        splashHeight,
         NULL,
         NULL,
         hInstance,
@@ -267,7 +286,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
-    return TRUE;
+    return hWnd;
 }
 
 //
@@ -290,11 +309,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         SetTimer(hWnd, ID_TIMER_3, 2000, NULL);
         SetTimer(hWnd, ID_TIMER_4, 3000, NULL);
         break;
-    case WM_PAINT:
-    {
+    case WM_PAINT: {
         PAINTSTRUCT ps = { 0 };
         RECT rect = { 0 };
         HDC hDC = BeginPaint(hWnd, &ps);
+
         GetClientRect(hWnd, &rect);
         Rectangle(hDC, rect.left, rect.top, rect.right, rect.bottom);
         SetTextAlign(hDC, TA_CENTER);
@@ -334,18 +353,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         case ID_TIMER_1:
         case ID_TIMER_2:
         case ID_TIMER_3:
+            drawBkgBitmap(hWnd, (HDC)hDC, &rect);
+            SetTextColor(hDC, splashTextColor);
+            SetBkMode(hDC, TRANSPARENT);
             TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17, SZ_0, lstrlen(SZ_0));
-            RECT barF = { rect.left + SPLASH_HEIGHT
-                , rect.top + SPLASH_HEIGHT + SPLASH_HEIGHT * 0.2
-                , rect.right - SPLASH_HEIGHT
-                , rect.top + SPLASH_HEIGHT + SPLASH_HEIGHT - SPLASH_HEIGHT * 0.2 };
+            RECT barF = { rect.left
+                , rect.bottom - 17 * 3
+                , rect.right
+                , rect.bottom - 17 * 3 + 5 };
             RECT barC = { barF.left
                 , barF.top
                 , barF.left + (barF.right - barF.left) * progress
                 , barF.bottom };
-            Rectangle(hDC, barF.left, barF.top, barF.right, barF.bottom);
+            //Rectangle(hDC, barF.left, barF.top, barF.right, barF.bottom);
             FillRect(hDC, &barC, hSplashBrush);
-            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.top + 17 + SPLASH_HEIGHT * 2, szProgress, lstrlen(szProgress));
+            TextOut(hDC, rect.left + (rect.right - rect.left) / 2, rect.bottom - 17 * 4, szProgress, lstrlen(szProgress));
             break;
         }
         ReleaseDC(hWnd, hDC);

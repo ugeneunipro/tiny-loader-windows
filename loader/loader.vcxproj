@@ -108,6 +108,7 @@
     <ResourceCompile Include="loader.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="bitmap1.bmp" />
     <Image Include="ugene.ico" />
   </ItemGroup>
   <ItemGroup>

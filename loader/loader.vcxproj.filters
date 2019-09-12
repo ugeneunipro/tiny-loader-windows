@@ -48,5 +48,11 @@
     <Image Include="ugene.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="bitmap1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test-multi-start-d.sh" />
   </ItemGroup>
 </Project>
