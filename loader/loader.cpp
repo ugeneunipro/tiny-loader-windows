@@ -245,11 +245,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 
     //   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
     //      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
-    hWnd = CreateWindowEx(WS_EX_TOOLWINDOW,
+    hWnd = CreateWindowEx(WS_EX_APPWINDOW, // WS_EX_TOOLWINDOW,
         szWindowClass,
-        NULL,
-        //WS_OVERLAPPED,
-        WS_POPUP | WS_VISIBLE,
+        L"UGENE",
+        WS_OVERLAPPED |
+        //WS_POPUP |
+        WS_VISIBLE,
         (rect.right - rect.left - splashwidth) / 2,
         (rect.bottom - rect.top - splashheight) / 2,
         splashwidth,
@@ -262,7 +263,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     if (!hWnd) {
         return FALSE;
     }
-    SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    //SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
